@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Save, 
   UserCog, 
@@ -9,19 +9,14 @@ import {
   CheckCircle2,
   Users,
   Key,
-  Fingerprint,
   RefreshCw,
   Eye,
   EyeOff,
   ShieldCheck,
-  UserCheck,
   Video,
-  FileText,
-  UploadCloud,
   PlayCircle,
   Image as ImageIcon
 } from 'lucide-react';
-import { uploadPlayerFile } from '../services/playerService';
 
 interface TourSlide {
   title: string;
@@ -65,7 +60,6 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
   const [localTourData, setLocalTourData] = useState<TourSlide[]>(tourData);
   
   const [showToast, setShowToast] = useState<{show: boolean, msg: string}>({show: false, msg: ''});
-  const [isUploading, setIsUploading] = useState<number | null>(null);
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
 
   const triggerToast = (msg: string) => {
@@ -86,22 +80,6 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
   const handleTourSave = () => {
     onTourDataUpdate(localTourData);
     triggerToast("تم حفظ إعدادات الجولة التعريفية بنجاح");
-  };
-
-  const handleFileUpload = async (index: number, type: 'img' | 'video', file: File) => {
-    setIsUploading(index);
-    try {
-      const url = await uploadPlayerFile(file, `tour/${type}`);
-      const updated = [...localTourData];
-      if (type === 'img') updated[index].img = url;
-      else updated[index].videoUrl = url;
-      setLocalTourData(updated);
-      triggerToast("تم رفع الملف بنجاح");
-    } catch (e) {
-      triggerToast("فشل رفع الملف");
-    } finally {
-      setIsUploading(null);
-    }
   };
 
   const updateTourSlide = (index: number, field: keyof TourSlide, value: string) => {
@@ -125,7 +103,6 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
         </div>
       )}
 
-      {/* Navigation Sub-Tabs */}
       <div className="flex flex-wrap gap-2 bg-white p-2 rounded-[2rem] border border-gray-100 shadow-sm w-fit mx-auto lg:mx-0">
         {[
           { id: 'account', label: 'حساب المدير', icon: UserCog },
@@ -266,7 +243,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
           <div className="p-8 space-y-12">
             <div className="bg-amber-50 p-6 rounded-3xl border border-amber-100 flex items-start gap-4">
                <ShieldCheck size={20} className="text-amber-600 mt-1" />
-               <p className="text-xs text-amber-800 font-bold leading-relaxed">يمكنك هنا تخصيص الجولة التعريفية للزوار. يمكنك رفع فيديوهات مباشرة أو وضع روابط YouTube. سيتم تحديث المحتوى في "بوابة الزوار" فور الحفظ.</p>
+               <p className="text-xs text-amber-800 font-bold leading-relaxed">بما أن خدمة التخزين السحابي غير مفعلة، يرجى وضع روابط الصور والفيديوهات مباشرة (رابط خارجي أو YouTube).</p>
             </div>
 
             <div className="grid grid-cols-1 gap-12">
@@ -294,8 +271,24 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                           className="w-full px-5 py-4 bg-white border border-gray-200 rounded-2xl outline-none font-bold text-sm text-gray-600 resize-none focus:ring-4 focus:ring-emerald-500/10 transition-all" 
                         />
                       </div>
+                    </div>
+
+                    <div className="space-y-6">
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mr-4">رابط الفيديو (YouTube أو مباشر)</label>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mr-4">رابط صورة الغلاف</label>
+                        <div className="relative">
+                           <ImageIcon className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300" size={20} />
+                           <input 
+                             type="text" 
+                             value={slide.img} 
+                             onChange={(e) => updateTourSlide(idx, 'img', e.target.value)}
+                             placeholder="https://images.unsplash.com/..."
+                             className="w-full pr-12 pl-4 py-4 bg-white border border-gray-200 rounded-2xl outline-none font-mono text-xs font-bold text-emerald-600 ltr" 
+                           />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mr-4">رابط الفيديو (YouTube)</label>
                         <div className="relative">
                            <PlayCircle className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300" size={20} />
                            <input 
@@ -307,37 +300,6 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                            />
                         </div>
                       </div>
-                    </div>
-
-                    <div className="space-y-6">
-                       <div className="grid grid-cols-2 gap-4 h-full">
-                          <div className="space-y-4">
-                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center block">رفع صورة الغلاف</label>
-                             <div className="relative h-48 border-2 border-dashed border-gray-200 rounded-[2rem] overflow-hidden group/upload bg-white flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-emerald-400 transition-all">
-                                {slide.img ? (
-                                  <img src={slide.img} className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover/upload:opacity-60 transition-opacity" />
-                                ) : <ImageIcon size={32} className="text-gray-300" />}
-                                <input type="file" accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => e.target.files?.[0] && handleFileUpload(idx, 'img', e.target.files[0])} />
-                                <UploadCloud size={24} className="text-emerald-500 relative z-10" />
-                                <span className="text-[10px] font-black text-emerald-600 relative z-10">اختر صورة</span>
-                             </div>
-                          </div>
-                          <div className="space-y-4">
-                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest text-center block">رفع فيديو المشهد</label>
-                             <div className="relative h-48 border-2 border-dashed border-gray-200 rounded-[2rem] overflow-hidden bg-white flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-blue-400 transition-all">
-                                {isUploading === idx ? (
-                                  <RefreshCw className="animate-spin text-blue-500" size={32} />
-                                ) : (
-                                  <>
-                                    <Video size={32} className="text-gray-300" />
-                                    <input type="file" accept="video/*" className="absolute inset-0 opacity-0 cursor-pointer" onChange={(e) => e.target.files?.[0] && handleFileUpload(idx, 'video', e.target.files[0])} />
-                                    <UploadCloud size={24} className="text-blue-500" />
-                                    <span className="text-[10px] font-black text-blue-600">رفع فيديو مباشر</span>
-                                  </>
-                                )}
-                             </div>
-                          </div>
-                       </div>
                     </div>
                   </div>
                 </div>

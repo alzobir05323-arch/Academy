@@ -1,7 +1,7 @@
 
-import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
+// Fix: Using namespace imports for Firebase to resolve member resolution issues in the build environment
+import * as firebaseApp from "firebase/app";
+import * as firestorePkg from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBWhVfIipdzjwIwZ_E8qLxre4bUvFQS694",
@@ -14,10 +14,9 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
+const app = firebaseApp.initializeApp(firebaseConfig);
 
 // Initialize Services
-export const db = getFirestore(app);
-export const storage = getStorage(app);
+export const db = firestorePkg.getFirestore(app);
 
 export default app;
